@@ -4,6 +4,7 @@ import random
 
 font.init()
 font = font.Font("font.ttf", 30)
+winsfile = open("wins.txt","a")
 
 win_width = 800
 win_height = 450
@@ -21,13 +22,15 @@ winsound.set_volume(3)
 defentsound = mixer.Sound("defent.wav")
 defentsound.set_volume(10)
 balltouchsound = mixer.Sound("balltouch.wav")
+losesound = mixer.Sound("lose.wav")
+winsound = mixer.Sound("win.wav")
 FPS = 60
 game = True
 clock = time.Clock()
 ball_speed_x = 5
 ball_speed_y = 5
 opponent_speed = 5
-timer = 0
+timer = 60
 
 player_points = 0
 opponent_points = 0
@@ -122,17 +125,20 @@ opponentcounterfake.rect.y = 0
 
 ball.restart()
 
+gameend = False
+
 start_ticks=time.get_ticks()
 while game:
     key_pressed = key.get_pressed() 
     background.render()
     board.render()
-    player.render()
-    opponent.render()
-    ball.render()
-    player.update(key_pressed[K_UP],key_pressed[K_DOWN],5)
-    opponent.update(ball)
-    ball.update(player,opponent)
+    if not gameend:
+        player.render()
+        opponent.render()
+        ball.render()
+        player.update(key_pressed[K_UP],key_pressed[K_DOWN],5)
+        opponent.update(ball)
+        ball.update(player,opponent)
     playercounterfake.render()
     opponentcounterfake.render()
     seconds=(time.get_ticks()-start_ticks)/1000 #calculate how many seconds
@@ -146,18 +152,51 @@ while game:
     "Time", True, (84,55,78)
     )
     realtimer = font.render(
-    str(seconds), True, (236,211,228)
+    str(timer-int(seconds)), True, (236,211,228)
     )
-    window.blit(realtimer, (376,15))
-    window.blit(faketimer, (376,-7))
+    enemytext = font.render(
+    "Enemy", True, (84,55,78)
+    )
+    playertext = font.render(
+    "You", True, (84,55,78)
+    )
+    if not gameend:
+        window.blit(realtimer, (376,15))
+        window.blit(faketimer, (376,-7))
+    window.blit(playertext, (win_width-200,5))
+    window.blit(enemytext, (0+50,5))
     window.blit(playerpointscounter, (win_width-150,5))
     window.blit(opponentpointscounter, (0+150,5))
-    if player_points > 4:
-        print("!Игрок победил!")
-        game = False
-    if opponent_points > 4:
-        print("!Оппонент победил!")
-        game = False
+    if timer-int(seconds) < 1:
+        if player_points < opponent_points and not gameend:
+            print("!Оппонент победил!")
+            wintext = font.render(
+            "Enemy win!", True, (236,211,228)
+            )
+            winsfile.write("Оппонент победил\n")
+        if player_points > opponent_points and not gameend:
+            print("!Игрок победил!")
+            wintext = font.render(
+            "Player win!", True, (236,211,228)
+            )
+            winsfile.write("Игрок победил\n")
+        if player_points == opponent_points and not gameend:
+            print("!Ничья!")
+            wintext = font.render(
+            "Tie!", True, (236,211,228)
+            )
+            winsfile.write("Ничья\n")
+        if player_points < opponent_points:
+            window.blit(wintext, (0+150,50))
+            losesound.play()
+        if player_points > opponent_points:
+            window.blit(wintext, (win_height+150,50))
+            winsound.play()
+        if player_points == opponent_points:
+            window.blit(wintext, (0+385,50))
+        winsfile.close()
+        gameend = True
+        mixer.music.stop()
     for e in event.get():
         if e.type == QUIT:
             print("QUIT")
